@@ -69,10 +69,17 @@ export function recordUsage(promptTokens: number, completionTokens: number): voi
   state.totalCompletionTokens += completionTokens;
 }
 
+export function subtractUsage(promptTokens: number, completionTokens: number): void {
+  state.totalPromptTokens = Math.max(0, state.totalPromptTokens - promptTokens);
+  state.totalCompletionTokens = Math.max(0, state.totalCompletionTokens - completionTokens);
+}
+
 export function resetAll(): void {
   state.isActive = false;
   state.systemPrompt = config.systemPrompt;
   state.botDisplayName = config.botDisplayName;
   state.temperature = config.deepseekTemperature;
   state.includeUserPrompt = true;
+  state.totalPromptTokens = 0;
+  state.totalCompletionTokens = 0;
 }

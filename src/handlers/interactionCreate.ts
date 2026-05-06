@@ -1,4 +1,5 @@
-import { AutocompleteInteraction, ChatInputCommandInteraction, Interaction } from "discord.js";
+import { AutocompleteInteraction, ButtonInteraction, ChatInputCommandInteraction, Interaction } from "discord.js";
+import { handleButtonInteraction } from "./buttonCreate";
 import { errorEmbed } from "../utils/embeds";
 
 type CommandModule = {
@@ -31,6 +32,11 @@ async function loadCommands(): Promise<void> {
 loadCommands().catch(console.error);
 
 export async function handleInteractionCreate(interaction: Interaction): Promise<void> {
+  if (interaction.isButton()) {
+    await handleButtonInteraction(interaction as ButtonInteraction);
+    return;
+  }
+
   if (interaction.isAutocomplete()) {
     const command = commands.get(interaction.commandName);
     if (command?.autocomplete) {

@@ -9,15 +9,16 @@ import {
   getIsActive,
   getFullSystemPrompt,
   recordUsage,
+  getUsage,
   getBotDisplayName,
 } from "../store/guildStore";
 import { getChatCompletion, getChatCompletionWithImages } from "../deepseek";
 import { errorEmbed } from "../utils/embeds";
 import { startTyping } from "../utils/typing";
-import { sendFormattedResponse } from "../utils/formatting";
+import { buildResponseButtons, sendFormattedResponse } from "../utils/formatting";
 import { resolveMarkup } from "../utils/parseDiscordMarkup";
 
-const processingChannels = new Set<string>();
+export const processingChannels = new Set<string>();
 
 export async function handleMessageCreate(message: Message): Promise<void> {
   // 1. Ignore bots
@@ -75,7 +76,7 @@ export async function handleMessageCreate(message: Message): Promise<void> {
       }
     }
 
-    // Override last user message content with the resolved version
+    // Override last user message with resolved content
     const lastUserIdx = [...messages].reverse().findIndex((m) => m.role === "user");
     if (lastUserIdx !== -1) {
       const actualIdx = messages.length - 1 - lastUserIdx;
@@ -98,8 +99,17 @@ export async function handleMessageCreate(message: Message): Promise<void> {
 
     stopTyping();
     recordUsage(result.promptTokens, result.completionTokens);
+    const { promptTokens, completionTokens } = getUsage();
 
-    await sendFormattedResponse(placeholder, channel, result.thinking, result.reply);
+    const buttons = buildResponseButtons(message.channelId, placeholder.id);
+    await sendFormattedResponse(
+      placeholder,
+      channel,
+      result.thinking,
+      result.reply,
+      promptTokens + completionTokens,
+      [buttons]
+    );
 
     appendBotMessage(message.channelId, {
       discordId: placeholder.id,
@@ -108,6 +118,8 @@ export async function handleMessageCreate(message: Message): Promise<void> {
       content: result.reply,
       isBot: true,
       timestamp: new Date(),
+      promptTokens: result.promptTokens,
+      completionTokens: result.completionTokens,
     });
 
     message.client.user?.setPresence({

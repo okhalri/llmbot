@@ -49,6 +49,12 @@ export function getLastAssistantMessageIndex(channelId: string): number | null {
   return store.get(channelId)?.lastAssistantMessageIndex ?? null;
 }
 
+export function getLastAssistantMessageId(channelId: string): string | null {
+  const cache = store.get(channelId);
+  if (!cache || cache.lastAssistantMessageIndex === null) return null;
+  return cache.messages[cache.lastAssistantMessageIndex]?.discordId ?? null;
+}
+
 export function setChannelFence(channelId: string, fenceId: string): void {
   const cache = store.get(channelId);
   if (cache && cache.contextStartMessageId === null && cache.lastFetchedMessageId === null) {
@@ -61,6 +67,28 @@ export function popLastAssistantMessage(channelId: string): void {
   if (!cache || cache.lastAssistantMessageIndex === null) return;
   cache.messages.splice(cache.lastAssistantMessageIndex, 1);
   cache.lastAssistantMessageIndex = null;
+}
+
+// Removes all consecutive bot messages from the end of the cache.
+// Returns their discordIds and the summed token counts for deduction.
+export function popTrailingBotMessages(channelId: string): {
+  ids: string[];
+  promptTokens: number;
+  completionTokens: number;
+} {
+  const cache = store.get(channelId);
+  if (!cache) return { ids: [], promptTokens: 0, completionTokens: 0 };
+  const ids: string[] = [];
+  let promptTokens = 0;
+  let completionTokens = 0;
+  while (cache.messages.length > 0 && cache.messages[cache.messages.length - 1].isBot) {
+    const msg = cache.messages.pop()!;
+    ids.push(msg.discordId);
+    promptTokens += msg.promptTokens ?? 0;
+    completionTokens += msg.completionTokens ?? 0;
+  }
+  cache.lastAssistantMessageIndex = null;
+  return { ids, promptTokens, completionTokens };
 }
 
 export async function syncAndGetContext(

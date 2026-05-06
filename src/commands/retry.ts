@@ -6,11 +6,11 @@ import {
   appendBotMessage,
   hasChannel,
 } from "../store/channelStore";
-import { getFullSystemPrompt, recordUsage, getBotDisplayName } from "../store/guildStore";
+import { getFullSystemPrompt, recordUsage, getUsage, getBotDisplayName } from "../store/guildStore";
 import { getChatCompletion } from "../deepseek";
 import { errorEmbed } from "../utils/embeds";
 import { startTyping } from "../utils/typing";
-import { sendFormattedResponse } from "../utils/formatting";
+import { buildResponseButtons, sendFormattedResponse } from "../utils/formatting";
 
 export const data = new SlashCommandBuilder()
   .setName("retry")
@@ -45,12 +45,19 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
 
     const result = await getChatCompletion(messages);
     stopTyping();
-
     recordUsage(result.promptTokens, result.completionTokens);
+    const { promptTokens, completionTokens } = getUsage();
 
     const placeholder = await interaction.editReply("...");
-
-    await sendFormattedResponse(placeholder, channel, result.thinking, result.reply);
+    const buttons = buildResponseButtons(channelId, placeholder.id);
+    await sendFormattedResponse(
+      placeholder,
+      channel,
+      result.thinking,
+      result.reply,
+      promptTokens + completionTokens,
+      [buttons]
+    );
 
     appendBotMessage(channelId, {
       discordId: placeholder.id,
@@ -59,6 +66,8 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       content: result.reply,
       isBot: true,
       timestamp: new Date(),
+      promptTokens: result.promptTokens,
+      completionTokens: result.completionTokens,
     });
   } catch (err) {
     stopTyping();

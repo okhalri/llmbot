@@ -5,6 +5,8 @@ export interface CachedMessage {
   content: string;
   isBot: boolean;
   timestamp: Date;
+  promptTokens?: number;
+  completionTokens?: number;
 }
 
 export interface ChannelCache {
