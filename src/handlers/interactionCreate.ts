@@ -1,8 +1,9 @@
-import { ChatInputCommandInteraction, Interaction } from "discord.js";
+import { AutocompleteInteraction, ChatInputCommandInteraction, Interaction } from "discord.js";
 import { errorEmbed } from "../utils/embeds";
 
 type CommandModule = {
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
+  autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
 };
 
 const commands = new Map<string, CommandModule>();
@@ -18,6 +19,7 @@ async function loadCommands(): Promise<void> {
     "tldr",
     "usage",
     "config",
+    "prompt",
   ];
 
   for (const name of modules) {
@@ -29,6 +31,14 @@ async function loadCommands(): Promise<void> {
 loadCommands().catch(console.error);
 
 export async function handleInteractionCreate(interaction: Interaction): Promise<void> {
+  if (interaction.isAutocomplete()) {
+    const command = commands.get(interaction.commandName);
+    if (command?.autocomplete) {
+      await command.autocomplete(interaction).catch(console.error);
+    }
+    return;
+  }
+
   if (!interaction.isChatInputCommand()) return;
 
   const command = commands.get(interaction.commandName);

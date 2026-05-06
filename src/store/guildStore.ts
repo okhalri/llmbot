@@ -3,11 +3,12 @@ import { GuildState } from "../types";
 
 const state: GuildState = {
   isActive: false,
-  systemPrompt: "You are a helpful assistant.",
+  systemPrompt: config.systemPrompt,
   botDisplayName: config.botDisplayName,
   temperature: config.deepseekTemperature,
   totalPromptTokens: 0,
   totalCompletionTokens: 0,
+  includeUserPrompt: true,
 };
 
 export function getState(): GuildState {
@@ -27,10 +28,13 @@ export function getSystemPrompt(): string {
 }
 
 export function getFullSystemPrompt(): string {
-  const base = config.basePrompt.trim();
-  const system = state.systemPrompt.trim();
-  if (base && system) return `${base}\n\n${system}`;
-  return base || system;
+  const parts = [config.basePrompt, state.systemPrompt];
+  if (state.includeUserPrompt) parts.push(config.userPrompt);
+  return parts.map((p) => p.trim()).filter(Boolean).join("\n\n");
+}
+
+export function setIncludeUserPrompt(val: boolean): void {
+  state.includeUserPrompt = val;
 }
 
 export function setSystemPrompt(text: string): void {
@@ -67,7 +71,8 @@ export function recordUsage(promptTokens: number, completionTokens: number): voi
 
 export function resetAll(): void {
   state.isActive = false;
-  state.systemPrompt = "You are a helpful assistant.";
+  state.systemPrompt = config.systemPrompt;
   state.botDisplayName = config.botDisplayName;
   state.temperature = config.deepseekTemperature;
+  state.includeUserPrompt = true;
 }

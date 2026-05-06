@@ -10,6 +10,8 @@ export interface Config {
   deepseekTemperature: number;
   botDisplayName: string;
   basePrompt: string;
+  systemPrompt: string;
+  userPrompt: string;
 }
 
 function loadEnv(): Config {
@@ -44,6 +46,8 @@ function loadEnv(): Config {
     deepseekTemperature: temperature,
     botDisplayName: process.env.BOT_DISPLAY_NAME ?? "Assistant",
     basePrompt: process.env.BASE_PROMPT ?? "",
+    systemPrompt: process.env.SYSTEM_PROMPT ?? "You are a helpful assistant.",
+    userPrompt: process.env.USER_PROMPT ?? "",
   };
 }
 

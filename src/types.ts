@@ -22,6 +22,7 @@ export interface GuildState {
   temperature: number;
   totalPromptTokens: number;
   totalCompletionTokens: number;
+  includeUserPrompt: boolean;
 }
 
 

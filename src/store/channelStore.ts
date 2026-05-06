@@ -2,6 +2,7 @@ import { TextChannel } from "discord.js";
 import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { CachedMessage, ChannelCache } from "../types";
 import { getChatCompletion } from "../deepseek";
+import { resolveMarkup } from "../utils/parseDiscordMarkup";
 
 const MAX_CONTEXT_MESSAGES = 200;
 
@@ -106,11 +107,12 @@ async function fetchNewMessages(
         if (msg.author.bot && msg.author.id !== botUserId) continue;
         if (msg.interaction) continue;
 
+        const content = await resolveMarkup(msg.content, channel.guild, botUserId);
         fetched.push({
           discordId: msg.id,
           authorId: msg.author.id,
           displayName: msg.member?.displayName ?? msg.author.username,
-          content: msg.content,
+          content,
           isBot: msg.author.id === botUserId,
           timestamp: msg.createdAt,
         });

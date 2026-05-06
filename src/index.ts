@@ -2,10 +2,10 @@ import "dotenv/config";
 import { Client, GatewayIntentBits, REST, Routes } from "discord.js";
 import { config } from "./config";
 import { getIsActive } from "./store/guildStore";
+import { loadPrompts } from "./store/promptStore";
 import { handleMessageCreate } from "./handlers/messageCreate";
 import { handleInteractionCreate } from "./handlers/interactionCreate";
 
-// Load command definitions for registration
 import { data as startData } from "./commands/start";
 import { data as stopData } from "./commands/stop";
 import { data as clearData } from "./commands/clear";
@@ -15,6 +15,7 @@ import { data as contextData } from "./commands/context";
 import { data as tldrData } from "./commands/tldr";
 import { data as usageData } from "./commands/usage";
 import { data as configData } from "./commands/config";
+import { data as promptData } from "./commands/prompt";
 
 const commandDefs = [
   startData,
@@ -26,19 +27,12 @@ const commandDefs = [
   tldrData,
   usageData,
   configData,
+  promptData,
 ].map((d) => d.toJSON());
 
-function getClientIdFromToken(token: string): string {
-  // Discord bot tokens are base64(clientId).timestamp.hmac
-  try {
-    const [part] = token.split(".");
-    return Buffer.from(part, "base64").toString("utf-8");
-  } catch {
-    return "";
-  }
-}
-
 async function main(): Promise<void> {
+  loadPrompts();
+
   const client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
@@ -52,7 +46,6 @@ async function main(): Promise<void> {
     console.log(`[bot] Logged in as ${c.user.tag}`);
     console.log(`[bot] Restricted to guild: ${config.allowedGuildId}`);
 
-    // Register commands now that we have a confirmed client ID
     const rest = new REST({ version: "10" }).setToken(config.discordToken);
     await rest
       .put(
@@ -62,7 +55,6 @@ async function main(): Promise<void> {
       .then(() => console.log("[commands] Guild commands registered"))
       .catch((err) => console.error("[commands] Failed to register commands:", err));
 
-    // Set initial presence based on rehydrated state
     if (getIsActive()) {
       c.user.setPresence({ status: "online", activities: [{ name: "Active", type: 3 }] });
     } else {

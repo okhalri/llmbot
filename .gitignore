@@ -3,3 +3,4 @@ dist/
 .env
 data/cache.json
 *.js.map
+data/

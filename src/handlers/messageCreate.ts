@@ -17,6 +17,8 @@ import { startTyping } from "../utils/typing";
 import { sendFormattedResponse } from "../utils/formatting";
 import { resolveMarkup } from "../utils/parseDiscordMarkup";
 
+const processingChannels = new Set<string>();
+
 export async function handleMessageCreate(message: Message): Promise<void> {
   // 1. Ignore bots
   if (message.author.bot) return;
@@ -45,6 +47,13 @@ export async function handleMessageCreate(message: Message): Promise<void> {
     await message.reply({ embeds: [errorEmbed("Use /start to activate the bot in this channel first.")] });
     return;
   }
+
+  // 7. One response at a time per channel
+  if (processingChannels.has(message.channelId)) {
+    await message.reply({ embeds: [errorEmbed("Already processing a response in this channel. Please wait.")] });
+    return;
+  }
+  processingChannels.add(message.channelId);
 
   const channel = message.channel as TextChannel;
   const stopTyping = startTyping(channel);
@@ -109,5 +118,7 @@ export async function handleMessageCreate(message: Message): Promise<void> {
     stopTyping();
     const msg = err instanceof Error ? err.message : String(err);
     await message.reply({ embeds: [errorEmbed(msg)] }).catch(() => {});
+  } finally {
+    processingChannels.delete(message.channelId);
   }
 }
